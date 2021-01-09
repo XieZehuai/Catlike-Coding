@@ -1,13 +1,19 @@
+﻿/*
+ * Author: Huai
+ * Create: 2021/1/10 3:46:25
+ *
+ * Description:
+ */
+
 using System;
 using UnityEngine;
-using UnityEngine.PlayerLoop;
 
-namespace BuildingAGraph
+namespace Basics
 {
     public class Graph : MonoBehaviour
     {
         [SerializeField] private Transform pointPrefab = default;
-        [SerializeField, Range(10, 100)] private int resolution = 10; // �������
+        [SerializeField, Range(10, 100)] private int resolution = 10; // 分辨率，也就是点的数量
 
         private Transform[] points;
 
