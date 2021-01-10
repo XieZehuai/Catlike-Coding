@@ -33,6 +33,7 @@ namespace Basics.BuildingAGraph
         Ripple,
         Cylinder,
         Sphere,
+        Torus,
         Custom
     }
 
@@ -189,6 +190,19 @@ namespace Basics.BuildingAGraph
             position.x = s * Mathf.Cos(pi * u);
             position.y = radius * Mathf.Sin(pi * v * 0.5f);
             position.z = s * Mathf.Sin(pi * u);
+
+            return position;
+        }
+
+        private Vector3 Torus(float u, float v)
+        {
+            Vector3 position = new Vector3();
+            float r1 = 0.7f + 0.1f * Mathf.Sin(pi * (6f * u + 0.5f * Time.time));
+            float r2 = 0.15f + 0.05f * Mathf.Sin(pi * (8f * u + 4f * v + 2f * Time.time));
+            float s = r1 + r2 * Mathf.Cos(pi * v);
+            position.x = s * Mathf.Sin(pi * u);
+            position.y = r2 * Mathf.Sin(pi * v);
+            position.z = s * Mathf.Cos(pi * u);
 
             return position;
         }

@@ -245,11 +245,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pointPrefabs: {fileID: 7816423287055150044, guid: 12ea05999c2889f44a14b67a1bcf5318,
     type: 3}
-  pointNum: 20
-  scale: 0.2
+  pointNum: 50
+  scale: 0.1
   interval: 0.1
   func2D: 0
-  func3D: 0
+  func3D: 6
   show3DGraph: 1
 --- !u!4 &1033551091
 Transform:
