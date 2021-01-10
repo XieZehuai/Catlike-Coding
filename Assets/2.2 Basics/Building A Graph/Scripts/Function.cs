@@ -94,6 +94,31 @@ namespace Basics.BuildingAGraph
             return funcDic[func](u, v);
         }
 
+        public GraphFunction GetFunction(Func3DEnum func)
+        {
+            if (!funcDic.ContainsKey(func))
+            {
+                try
+                {
+                    // 动态生成枚举对应的函数委托，并添加到字典中
+                    GraphFunction function =
+                        (GraphFunction)Delegate.CreateDelegate(typeof(GraphFunction), this, func.ToString());
+                    funcDic.Add(func, function);
+                }
+                catch (ArgumentException)
+                {
+                    Debug.Log("无法加载函数：" + func);
+                }
+            }
+
+            return funcDic[func];
+        }
+
+        public static Vector3 Morph(float u, float v, GraphFunction from, GraphFunction to, float progress)
+        {
+            return Vector3.Lerp(from(u, v), to(u, v), Mathf.SmoothStep(0f, 1f, progress));
+        }
+
         /*
          * 带有一个参数的函数
          */

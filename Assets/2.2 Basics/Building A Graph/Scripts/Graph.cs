@@ -6,6 +6,7 @@
  */
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -13,9 +14,6 @@ namespace Basics.BuildingAGraph
 {
     public class Graph : MonoBehaviour
     {
-        private readonly List<Transform> points = new List<Transform>(); // 储存所有点的实体
-        private int length; // points列表的长度（用一维数组表示二维数组，长度为（pointNum * 2）^ 2）
-
         [SerializeField] private Transform pointPrefabs; // 点的预设
         [SerializeField] private int pointNum = 10; // 点的数量（数量为（pointNum * 2）^ 2）
         [SerializeField] [Range(0.01f, 1f)] private float scale = 0.2f; // 点的缩放
@@ -23,9 +21,20 @@ namespace Basics.BuildingAGraph
         [SerializeField] private Func2DEnum func2D = default; // 2D图像函数
         [SerializeField] private Func3DEnum func3D = default; // 3D图像函数
         [SerializeField] private bool show3DGraph = default; // 是否显示3D图像，通过它来控制显示2D还是3D图像
+        [SerializeField, Min(0.1f)] private float changeDuration = 1f;
+        [SerializeField, Min(0.1f)] private float transitionDuration = 1f;
+
+        private readonly List<Transform> points = new List<Transform>(); // 储存所有点的实体
+        private int length; // points列表的长度（用一维数组表示二维数组，长度为（pointNum * 2）^ 2）
+
+        private float timer = 0f;
+        private bool isTransitioning;
+        private Func3DEnum nextFunction;
 
         private void Start()
         {
+            nextFunction = func3D;
+
             // 获取点列表长度并实例化点
             length = (int)Mathf.Pow(pointNum * 2, 2);
             for (int i = 0; i < length; i++)
@@ -36,7 +45,29 @@ namespace Basics.BuildingAGraph
 
         private void Update()
         {
-            DrawGraph(); // 画图，在Update里调用让图像能根据数据的变化实时改变
+            timer += Time.deltaTime;
+
+            if (!isTransitioning && timer >= changeDuration)
+            {
+                isTransitioning = true;
+                timer = 0f;
+                ChangeFunctionRandomly();
+            }
+
+            if (isTransitioning)
+            {
+                DrawGraphTransition();
+
+                if (timer >= transitionDuration)
+                {
+                    timer = 0f;
+                    isTransitioning = false;
+                }
+            }
+            else
+            {
+                DrawGraph(); // 画图，在Update里调用让图像能根据数据的变化实时改变
+            }
         }
 
         // 画图
@@ -48,9 +79,11 @@ namespace Basics.BuildingAGraph
                 {
                     float index = v * pointNum * 2 + u; // 把二维坐标转化为一维坐标
                     float y; // 点的y坐标的值
-                             // 判断要画的是2D图像还是3D图像
+
+                    // 判断要画的是2D图像还是3D图像
                     if (show3DGraph)
                     {
+
                         Vector3 position = Function.Instance.Func3D(u / pointNum - 1f, v / pointNum - 1f, func3D);
                         DrawPoint(points[(int)index], position * interval * 20f);
                     }
@@ -61,6 +94,39 @@ namespace Basics.BuildingAGraph
                     }
                 }
             }
+        }
+
+        private void DrawGraphTransition()
+        {
+            Function.GraphFunction from = Function.Instance.GetFunction(func3D);
+            Function.GraphFunction to = Function.Instance.GetFunction(nextFunction);
+
+            for (float v = 0; v < pointNum * 2; v++)
+            {
+                for (float u = 0; u < pointNum * 2; u++)
+                {
+                    float index = v * pointNum * 2 + u; // 把二维坐标转化为一维坐标
+                    float y; // 点的y坐标的值
+
+                    // 判断要画的是2D图像还是3D图像
+                    if (show3DGraph)
+                    {
+                        Vector3 position = Function.Morph(u / pointNum - 1f, v / pointNum - 1f, from, to, timer / transitionDuration);
+                        DrawPoint(points[(int)index], position * interval * 20f);
+                    }
+                    else
+                    {
+                        y = Function.Instance.Func2D(u / pointNum - 1f, func2D);
+                        DrawPoint(points[(int)index], (u - pointNum) * interval, y * interval * 10f, (v - pointNum) * interval);
+                    }
+                }
+            }
+        }
+
+        private void ChangeFunctionRandomly()
+        {
+            func3D = nextFunction;
+            nextFunction = (Func3DEnum)UnityEngine.Random.Range(0, 8);
         }
 
         private void DrawPoint(Transform point, float x, float y, float z = 0f)
