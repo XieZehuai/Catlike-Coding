@@ -24,17 +24,6 @@ namespace Basics.BuildingAGraph
         [SerializeField] private Func3DEnum func3D = default; // 3D图像函数
         [SerializeField] private bool show3DGraph = default; // 是否显示3D图像，通过它来控制显示2D还是3D图像
 
-        // 暂时不用，在OnValueChange里使用
-        // private float scaleTemp;
-        // private float intervalTemp;
-
-        private void Awake()
-        {
-            // 暂时不用，在OnValueChange里使用
-            // scaleTemp = scale;
-            // intervalTemp = interval;
-        }
-
         private void Start()
         {
             // 获取点列表长度并实例化点
@@ -43,13 +32,10 @@ namespace Basics.BuildingAGraph
             {
                 points.Add(Instantiate(pointPrefabs, transform));
             }
-
-            // DrawGraph();
         }
 
         private void Update()
         {
-            // OnValueChange();
             DrawGraph(); // 画图，在Update里调用让图像能根据数据的变化实时改变
         }
 
@@ -88,17 +74,5 @@ namespace Basics.BuildingAGraph
             point.position = position;
             point.localScale = Vector3.one * scale;
         }
-
-        // 暂时不用，如果不是在Update里调用DrawGraph方法的话，可以用这个方法动态更新图像
-        // private void OnValueChange()
-        // {
-        //     if (scale != scaleTemp || interval != intervalTemp)
-        //     {
-        //         // Debug.Log("change");
-        //         DrawGraph();
-        //         scaleTemp = scale;
-        //         intervalTemp = interval;
-        //     }
-        // }
     }
 }

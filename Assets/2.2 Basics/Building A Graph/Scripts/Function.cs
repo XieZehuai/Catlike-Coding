@@ -12,9 +12,9 @@ using UnityEngine;
 
 namespace Basics.BuildingAGraph
 {
-    /*
-     * 所有函数的枚举，每个值都必须有对应的相同名称的函数，不然会抛出异常
-     */
+    /// <summary>
+    /// 2D函数类型
+    /// </summary>
     public enum Func2DEnum
     {
         FuncSin,
@@ -22,6 +22,9 @@ namespace Basics.BuildingAGraph
         FuncCos
     }
 
+    /// <summary>
+    /// 3D函数类型
+    /// </summary>
     public enum Func3DEnum
     {
         FuncMultiSin1,
@@ -33,11 +36,11 @@ namespace Basics.BuildingAGraph
         Custom
     }
 
-    public delegate Vector3 GraphFunction(float u, float v);
-
     public class Function
     {
         public static Function Instance { get; } = new Function();
+
+        public delegate Vector3 GraphFunction(float u, float v);
 
         private static Dictionary<Func3DEnum, GraphFunction> funcDic;
         private const float pi = Mathf.PI;
@@ -65,8 +68,6 @@ namespace Basics.BuildingAGraph
 
             return (float)methodInfo.Invoke(Instance, new object[] { x });
         }
-
-
 
         /*
          * 三维函数调用接口，生成三维图形
@@ -112,8 +113,6 @@ namespace Basics.BuildingAGraph
         {
             return Mathf.Cos(pi * (x + Time.time));
         }
-
-
 
         /*
          * 带有两个参数的函数
