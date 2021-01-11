@@ -61,6 +61,7 @@ namespace Basics.BuildingAGraph
                 if (timer >= transitionDuration)
                 {
                     timer = 0f;
+                    func3D = nextFunction;
                     isTransitioning = false;
                 }
             }
@@ -100,6 +101,7 @@ namespace Basics.BuildingAGraph
         {
             Function.GraphFunction from = Function.Instance.GetFunction(func3D);
             Function.GraphFunction to = Function.Instance.GetFunction(nextFunction);
+            float progress = timer / transitionDuration;
 
             for (float v = 0; v < pointNum * 2; v++)
             {
@@ -111,7 +113,7 @@ namespace Basics.BuildingAGraph
                     // 判断要画的是2D图像还是3D图像
                     if (show3DGraph)
                     {
-                        Vector3 position = Function.Morph(u / pointNum - 1f, v / pointNum - 1f, from, to, timer / transitionDuration);
+                        Vector3 position = Function.Morph(u / pointNum - 1f, v / pointNum - 1f, from, to, progress);
                         DrawPoint(points[(int)index], position * interval * 20f);
                     }
                     else
@@ -125,7 +127,6 @@ namespace Basics.BuildingAGraph
 
         private void ChangeFunctionRandomly()
         {
-            func3D = nextFunction;
             nextFunction = (Func3DEnum)UnityEngine.Random.Range(0, 8);
         }
 
