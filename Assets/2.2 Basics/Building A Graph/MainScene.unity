@@ -302,7 +302,7 @@ MonoBehaviour:
   func2D: 0
   func3D: 6
   show3DGraph: 1
-  changeDuration: 1
+  changeDuration: 0.1
   transitionDuration: 2
 --- !u!4 &1033551091
 Transform:
