@@ -11,13 +11,12 @@ GameObject:
   - component: {fileID: 1690613177575512365}
   - component: {fileID: 1690613177575512366}
   - component: {fileID: 1690613177575512367}
-  - component: {fileID: 1690613177575512336}
-  - component: {fileID: 1690613177575512363}
   - component: {fileID: 1690613177575512364}
   - component: {fileID: 1690613177575512362}
   - component: {fileID: 1690613177575512361}
+  - component: {fileID: 929972099790658182}
   m_Layer: 0
-  m_Name: TestingCube
+  m_Name: EntitiesCube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -84,31 +83,6 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
---- !u!65 &1690613177575512336
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1690613177575512337}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &1690613177575512363
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1690613177575512337}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d69fa8660f864b94e941bfc0f19bc72c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &1690613177575512364
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -153,3 +127,16 @@ MonoBehaviour:
   horizontal: 0
   vertical: 0
   speed: 5
+--- !u!114 &929972099790658182
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1690613177575512337}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 97ab32c266bc1dc41a359b55d91f6e82, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  entity: {fileID: 0}
