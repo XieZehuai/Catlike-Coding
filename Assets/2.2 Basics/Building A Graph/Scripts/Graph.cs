@@ -84,7 +84,6 @@ namespace Basics.BuildingAGraph
                     // 判断要画的是2D图像还是3D图像
                     if (show3DGraph)
                     {
-
                         Vector3 position = Function.Instance.Func3D(u / pointNum - 1f, v / pointNum - 1f, func3D);
                         DrawPoint(points[(int)index], position * interval * 20f);
                     }
@@ -128,6 +127,18 @@ namespace Basics.BuildingAGraph
         private void ChangeFunctionRandomly()
         {
             nextFunction = (Func3DEnum)UnityEngine.Random.Range(0, 8);
+
+            float r = UnityEngine.Random.Range(0, 2);
+            float g = UnityEngine.Random.Range(0, 2);
+            float b = UnityEngine.Random.Range(0, 2);
+
+            for (int i = 0; i < points.Count; i++)
+            {
+                Material material = points[i].GetComponent<MeshRenderer>().material;
+                material.SetFloat("ReverseR", r);
+                material.SetFloat("ReverseG", g);
+                material.SetFloat("ReverseB", b);
+            }
         }
 
         private void DrawPoint(Transform point, float x, float y, float z = 0f)
