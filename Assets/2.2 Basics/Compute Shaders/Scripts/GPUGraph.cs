@@ -31,7 +31,7 @@ namespace Basics.ComputeShaders
 
     public class GPUGraph : MonoBehaviour
     {
-        private const int MAX_RESOLUTION = 200;
+        private const int MAX_RESOLUTION = 1000;
 
         [SerializeField] ComputeShader computeShader = default;
         [SerializeField] private Material material = default;
