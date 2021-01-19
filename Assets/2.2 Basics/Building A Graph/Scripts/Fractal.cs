@@ -12,7 +12,7 @@ namespace Basics.BuildingAGraph
 {
     public class Fractal : MonoBehaviour
     {
-        [SerializeField, Range(1, 8)] private int depth = 4; // ·ÖÐÎµü´úµÄÉî¶È
+        [SerializeField, Range(1, 8)] private int depth = 4; // ï¿½ï¿½ï¿½Îµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
         [SerializeField] private Mesh mesh = default;
         [SerializeField] private Material material = default;
@@ -30,111 +30,156 @@ namespace Basics.BuildingAGraph
 
 
         /***********************************************************************
-         *              ÐÂ·½·¨£¬Ð§ÂÊ¸ü¸ß
+         *              ï¿½Â·ï¿½ï¿½ï¿½ï¿½ï¿½Ð§ï¿½Ê¸ï¿½ï¿½ï¿½
          ***********************************************************************/
         private struct FractalPart
         {
             public Vector3 direction;
+            public Vector3 worldPosition;
             public Quaternion rotation;
-            public Transform transform;
+            public Quaternion worldRotation;
+            public float spinAngle;
         }
 
         private FractalPart[][] parts;
+        private Matrix4x4[][] matrices;
+        private ComputeBuffer[] matricesBuffers;
 
-        private void Awake()
+        private static readonly int matricesId = Shader.PropertyToID("_Matrices");
+        private static MaterialPropertyBlock propertyBlock;
+
+        private void OnEnable()
         {
             parts = new FractalPart[depth][];
+            matrices = new Matrix4x4[depth][];
+            matricesBuffers = new ComputeBuffer[depth];
+            int stride = 16 * 4; // Ò»ï¿½ï¿½Matrix4x4ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½16ï¿½ï¿½floatï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý£ï¿½Ò²ï¿½ï¿½ï¿½ï¿½16 * 4ï¿½Ö½Úµï¿½ï¿½ï¿½ï¿½ï¿½
 
-            // ¼ÆËãÃ¿²ã½ÚµãµÄ¸öÊý£¬µÚÒ»²ãÎª¸ù½Úµã£¬Ö»ÓÐÒ»¸ö£¬Ã¿¸ö½Úµã¶¼»áÉú³É5¸ö×Ó½Úµã
-            // £¬ËùÒÔÏÂÒ»²ã½ÚµãµÄÊýÁ¿Îªµ±Ç°²ãµÄ5±¶
+            // ï¿½ï¿½ï¿½ï¿½Ã¿ï¿½ï¿½Úµï¿½Ä¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½Îªï¿½ï¿½ï¿½Úµã£¬Ö»ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½Ã¿ï¿½ï¿½ï¿½Úµã¶¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½5ï¿½ï¿½ï¿½Ó½Úµï¿½
+            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½Úµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½Ç°ï¿½ï¿½ï¿½5ï¿½ï¿½
             for (int i = 0, length = 1; i < parts.Length; i++, length *= 5)
             {
                 parts[i] = new FractalPart[length];
+                matrices[i] = new Matrix4x4[length];
+                matricesBuffers[i] = new ComputeBuffer(length, stride);
             }
 
-            float scale = 1f;
-            parts[0][0] = CreateParts(0, 0, scale);
+            parts[0][0] = CreateParts(0);
 
             for (int i = 1; i < parts.Length; i++)
             {
                 FractalPart[] part = parts[i];
-                scale *= 0.5f;
 
                 for (int j = 0; j < part.Length; j += 5)
                 {
                     for (int k = 0; k < 5; k++)
                     {
-                        parts[i][j + k] = CreateParts(i, k, scale);
+                        parts[i][j + k] = CreateParts(k);
                     }
                 }
+            }
+
+            if (propertyBlock == null)
+            {
+                propertyBlock = new MaterialPropertyBlock();
             }
         }
 
         private void Update()
         {
-            Quaternion deltaRotation = Quaternion.Euler(0f, 22.5f * Time.deltaTime, 0f);
+            float spinAngleDelta = 22.5f * Time.deltaTime;
 
             FractalPart root = parts[0][0];
-            root.rotation *= deltaRotation;
-            root.transform.localRotation = root.rotation;
+            root.spinAngle += spinAngleDelta;
+            // root.worldRotation = root.rotation * Quaternion.Euler(0f, root.spinAngle, 0f);
+            root.worldRotation = transform.rotation * (root.rotation * Quaternion.Euler(0f, root.spinAngle, 0f));
+            root.worldPosition = transform.position;
             parts[0][0] = root;
+            float objectScale = transform.lossyScale.x;
+            matrices[0][0] = Matrix4x4.TRS(root.worldPosition, root.worldRotation, objectScale * Vector3.one);
 
+            float scale = objectScale;
             for (int i = 1; i < parts.Length; i++)
             {
+                scale *= 0.5f;
                 FractalPart[] parentLevel = parts[i - 1];
                 FractalPart[] level = parts[i];
+                Matrix4x4[] levelMatrices = matrices[i];
 
                 for (int j = 0; j < level.Length; j++)
                 {
-                    Transform parent = parentLevel[j / 5].transform;
+                    FractalPart parent = parentLevel[j / 5];
                     FractalPart part = level[j];
-                    part.rotation *= deltaRotation;
 
-                    part.transform.localRotation = parent.localRotation * part.rotation;
-                    part.transform.localPosition = parent.localPosition + parent.localRotation * (part.transform.localScale.x * part.direction * 1.5f);
+                    part.spinAngle += spinAngleDelta;
+                    part.worldRotation = parent.worldRotation * (part.rotation * Quaternion.Euler(0f, part.spinAngle, 0f));
+                    part.worldPosition = parent.worldPosition + parent.worldRotation * (scale * part.direction * 1.5f);
 
                     level[j] = part;
+                    levelMatrices[j] = Matrix4x4.TRS(part.worldPosition, part.worldRotation, scale * Vector3.one);
                 }
+            }
+
+            Bounds bounds = new Bounds(root.worldPosition, 3f * objectScale * Vector3.one);
+            for (int i = 0; i < matricesBuffers.Length; i++)
+            {
+                ComputeBuffer buffer = matricesBuffers[i];
+                buffer.SetData(matrices[i]);
+                propertyBlock.SetBuffer(matricesId, buffer);
+                Graphics.DrawMeshInstancedProcedural(mesh, 0, material, bounds, buffer.count, propertyBlock);
             }
         }
 
-        private FractalPart CreateParts(int level, int childIndex, float scale)
+        private void OnDisable()
         {
-            GameObject obj = new GameObject("Fractal Part level " + level + "  child " + childIndex);
+            for (int i = 0; i < matricesBuffers.Length; i++)
+            {
+                matricesBuffers[i].Release();
+            }
 
-            obj.transform.localScale = scale * Vector3.one;
-            obj.transform.SetParent(transform, false);
-            obj.AddComponent<MeshFilter>().mesh = mesh;
-            obj.AddComponent<MeshRenderer>().material = material;
+            parts = null;
+            matrices = null;
+            matricesBuffers = null;
+        }
 
+        private void OnValidate()
+        {
+            if (parts != null && enabled)
+            {
+                OnDisable();
+                OnEnable();
+            }
+        }
+
+        private FractalPart CreateParts(int childIndex)
+        {
             return new FractalPart
             {
                 direction = directions[childIndex],
                 rotation = rotations[childIndex],
-                transform = obj.transform
             };
         }
 
 
         /***********************************************************************
-         *              ÓÃÕâÖÖ·½·¨Éú³ÉµÄÍ¼ÐÎÐ§ÂÊ²»¸ß£¬ÔÝÊ±ÏÈ×¢ÊÍµô
+         *              ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Éµï¿½Í¼ï¿½ï¿½Ð§ï¿½Ê²ï¿½ï¿½ß£ï¿½ï¿½ï¿½Ê±ï¿½ï¿½×¢ï¿½Íµï¿½
          ***********************************************************************/
 
         /*
-         * Awake·½·¨ÔÚ¶ÔÏó±»ÊµÀý»¯ºóµ÷ÓÃ£¬Start·½·¨ÔÚUpdate·½·¨±»µ÷ÓÃÖ®Ç°µ÷ÓÃ£¬
-         * ¶øUpdate·½·¨Ö»»áÔÚ´¦ÓÚactive×´Ì¬ÏÂ²Å»á±»µ÷ÓÃ£¬ËùÒÔStartÔÚOnEnable·½·¨
-         * Ö®ºóµ÷ÓÃ¡£
+         * Awakeï¿½ï¿½ï¿½ï¿½ï¿½Ú¶ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã£ï¿½Startï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Updateï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö®Ç°ï¿½ï¿½ï¿½Ã£ï¿½
+         * ï¿½ï¿½Updateï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½ï¿½Ú´ï¿½ï¿½ï¿½active×´Ì¬ï¿½Â²Å»á±»ï¿½ï¿½ï¿½Ã£ï¿½ï¿½ï¿½ï¿½ï¿½Startï¿½ï¿½OnEnableï¿½ï¿½ï¿½ï¿½
+         * Ö®ï¿½ï¿½ï¿½ï¿½Ã¡ï¿½
          * 
-         * ÔÚÕâÀïµ÷ÓÃInstantiate(this)¿ËÂ¡×Ô¼º£¬Èç¹ûÊÇ·ÅÔÚAwake·½·¨ÀïµÄ»°£¬¿ËÂ¡Éú³ÉµÄ
-         * ¶ÔÏóÓÖ»áÊµÀý»¯ºóÂíÉÏµ÷ÓÃËüµÄAwake·½·¨£¬µ¼ÖÂË²¼äÉú³ÉÎÞÊý¸ö¿ËÂ¡¶ÔÏó£¬ËùÒÔÒª·ÅÔÚ
-         * StartÀïµ÷ÓÃ£¬ÕâÑùÃ¿¸ö¿ËÂ¡¶ÔÏóÊµÀý»¯ºóÖ»»áÔÚµ÷ÓÃUpdateÖ®Ç°¿ËÂ¡×Ô¼º£¬¶øUpdate
-         * Ã¿Ö¡µ÷ÓÃÒ»´Î£¬Ò²¾ÍÊÇËµÃ¿Ö¡¿ËÂ¡³öÒ»¸öÐÂµÄ¶ÔÏó
+         * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Instantiate(this)ï¿½ï¿½Â¡ï¿½Ô¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½Awakeï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä»ï¿½ï¿½ï¿½ï¿½ï¿½Â¡ï¿½ï¿½ï¿½Éµï¿½
+         * ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½Êµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ïµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Awakeï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½
+         * Startï¿½ï¿½ï¿½ï¿½Ã£ï¿½ï¿½ï¿½ï¿½ï¿½Ã¿ï¿½ï¿½ï¿½ï¿½Â¡ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½ï¿½Úµï¿½ï¿½ï¿½UpdateÖ®Ç°ï¿½ï¿½Â¡ï¿½Ô¼ï¿½ï¿½ï¿½ï¿½ï¿½Update
+         * Ã¿Ö¡ï¿½ï¿½ï¿½ï¿½Ò»ï¿½Î£ï¿½Ò²ï¿½ï¿½ï¿½ï¿½ËµÃ¿Ö¡ï¿½ï¿½Â¡ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ÂµÄ¶ï¿½ï¿½ï¿½
          */
         //private void Start()
         //{
         //    name = "Fractal_" + depth;
 
-        //    if (depth <= 1) // Éî¶ÈÖµ×îÐ¡Îª1
+        //    if (depth <= 1) // ï¿½ï¿½ï¿½Öµï¿½ï¿½Ð¡Îª1
         //    {
         //        return;
         //    }
@@ -154,15 +199,15 @@ namespace Basics.BuildingAGraph
 
         //private void Update()
         //{
-        //    transform.Rotate(0f, 22.5f * Time.deltaTime, 0f); // ÈÃÎïÌåÈÆ×ÅyÖáÃ¿ÃëÐý×ª22.5¶È
+        //    transform.Rotate(0f, 22.5f * Time.deltaTime, 0f); // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½yï¿½ï¿½Ã¿ï¿½ï¿½ï¿½ï¿½×ª22.5ï¿½ï¿½
         //}
 
         /// <summary>
-        /// ¸ù¾Ýµ±Ç°¶ÔÏó¸´ÖÆÒ»¸ö×ÓÎïÌå£¬²¢ÉèÖÃ×ÓÎïÌåÏà¶ÔÓÚµ±Ç°ÎïÌåµÄ·½ÏòÒÔ¼°Ðý×ª½Ç¶È
+        /// ï¿½ï¿½ï¿½Ýµï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½å£¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Úµï¿½Ç°ï¿½ï¿½ï¿½ï¿½Ä·ï¿½ï¿½ï¿½ï¿½Ô¼ï¿½ï¿½ï¿½×ªï¿½Ç¶ï¿½
         /// </summary>
-        /// <param name="direction">×ÓÎïÌåµÄ·½Ïò</param>
-        /// <param name="rotation">×ÓÎïÌåµÄ½Ç¶È</param>
-        /// <returns>×ÓÎïÌåÉÏµÄFractal×é¼þµÄÒýÓÃ</returns>
+        /// <param name="direction">ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä·ï¿½ï¿½ï¿½</param>
+        /// <param name="rotation">ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä½Ç¶ï¿½</param>
+        /// <returns>ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ïµï¿½Fractalï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½</returns>
         //private Fractal CreateChild(Vector3 direction, Quaternion rotation)
         //{
         //    Fractal child = Instantiate(this);
