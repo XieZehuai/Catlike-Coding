@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Author: Huai
  * Create: 2021/1/18 2:00:47
  *
@@ -7,12 +7,15 @@
 
 using System;
 using UnityEngine;
+using Unity.Burst;
+using Unity.Collections;
+using Unity.Jobs;
 
 namespace Basics.BuildingAGraph
 {
     public class Fractal : MonoBehaviour
     {
-        [SerializeField, Range(1, 8)] private int depth = 4; // ���ε��������
+        [SerializeField, Range(1, 8)] private int depth = 4; // the depth of the fractal iteration
 
         [SerializeField] private Mesh mesh = default;
         [SerializeField] private Material material = default;
@@ -28,10 +31,6 @@ namespace Basics.BuildingAGraph
             Quaternion.Euler(90f, 0f, 0f), Quaternion.Euler(-90f, 0f, 0f)
         };
 
-
-        /***********************************************************************
-         *              �·�����Ч�ʸ���
-         ***********************************************************************/
         private struct FractalPart
         {
             public Vector3 direction;
@@ -41,8 +40,32 @@ namespace Basics.BuildingAGraph
             public float spinAngle;
         }
 
-        private FractalPart[][] parts;
-        private Matrix4x4[][] matrices;
+        [BurstCompile(CompileSynchronously = true)]
+        private struct UpdateFractalLevelJob : IJobFor
+        {
+            public float spinAngleDelta;
+            public float scale;
+
+            [ReadOnly] public NativeArray<FractalPart> parents;
+            public NativeArray<FractalPart> parts;
+
+            [WriteOnly] public NativeArray<Matrix4x4> matrices;
+
+            public void Execute(int index)
+            {
+                FractalPart parent = parents[index / 5];
+                FractalPart part = parts[index];
+                part.spinAngle += spinAngleDelta;
+                part.worldRotation = parent.worldRotation * (part.rotation * Quaternion.Euler(0f, part.spinAngle, 0f));
+                part.worldPosition = parent.worldPosition + parent.worldRotation * (1.5f * scale * part.direction);
+
+                parts[index] = part;
+                matrices[index] = Matrix4x4.TRS(part.worldPosition, part.worldRotation, scale * Vector3.one);
+            }
+        }
+
+        private NativeArray<FractalPart>[] parts;
+        private NativeArray<Matrix4x4>[] matrices;
         private ComputeBuffer[] matricesBuffers;
 
         private static readonly int matricesId = Shader.PropertyToID("_Matrices");
@@ -50,17 +73,21 @@ namespace Basics.BuildingAGraph
 
         private void OnEnable()
         {
-            parts = new FractalPart[depth][];
-            matrices = new Matrix4x4[depth][];
+            parts = new NativeArray<FractalPart>[depth];
+            matrices = new NativeArray<Matrix4x4>[depth];
             matricesBuffers = new ComputeBuffer[depth];
-            int stride = 16 * 4; // һ��Matrix4x4�������16��float�������ݣ�Ҳ����16 * 4�ֽڵ�����
 
-            // ����ÿ��ڵ�ĸ�������һ��Ϊ���ڵ㣬ֻ��һ����ÿ���ڵ㶼������5���ӽڵ�
-            // ��������һ��ڵ������Ϊ��ǰ���5��
+            // Because the Matrix4x4 is made up of 16 float numbers, each
+            // float numbers has 4 bytes, so the size of a Matrix4x4 is 16 * 4
+            int stride = 16 * 4;
+
+            // Calculate the amount of points each level, because each point has 
+            // 5 sub-points, so the amount of points in each level is 5 times of 
+            // the previous level
             for (int i = 0, length = 1; i < parts.Length; i++, length *= 5)
             {
-                parts[i] = new FractalPart[length];
-                matrices[i] = new Matrix4x4[length];
+                parts[i] = new NativeArray<FractalPart>(length, Allocator.Persistent);
+                matrices[i] = new NativeArray<Matrix4x4>(length, Allocator.Persistent);
                 matricesBuffers[i] = new ComputeBuffer(length, stride);
             }
 
@@ -68,7 +95,7 @@ namespace Basics.BuildingAGraph
 
             for (int i = 1; i < parts.Length; i++)
             {
-                FractalPart[] part = parts[i];
+                NativeArray<FractalPart> part = parts[i];
 
                 for (int j = 0; j < part.Length; j += 5)
                 {
@@ -99,26 +126,22 @@ namespace Basics.BuildingAGraph
             matrices[0][0] = Matrix4x4.TRS(root.worldPosition, root.worldRotation, objectScale * Vector3.one);
 
             float scale = objectScale;
+            JobHandle jobHandle = default;
+
             for (int i = 1; i < parts.Length; i++)
             {
                 scale *= 0.5f;
-                FractalPart[] parentLevel = parts[i - 1];
-                FractalPart[] level = parts[i];
-                Matrix4x4[] levelMatrices = matrices[i];
-
-                for (int j = 0; j < level.Length; j++)
+                jobHandle = new UpdateFractalLevelJob
                 {
-                    FractalPart parent = parentLevel[j / 5];
-                    FractalPart part = level[j];
-
-                    part.spinAngle += spinAngleDelta;
-                    part.worldRotation = parent.worldRotation * (part.rotation * Quaternion.Euler(0f, part.spinAngle, 0f));
-                    part.worldPosition = parent.worldPosition + parent.worldRotation * (scale * part.direction * 1.5f);
-
-                    level[j] = part;
-                    levelMatrices[j] = Matrix4x4.TRS(part.worldPosition, part.worldRotation, scale * Vector3.one);
-                }
+                    spinAngleDelta = spinAngleDelta,
+                    scale = scale,
+                    parents = parts[i - 1],
+                    parts = parts[i],
+                    matrices = matrices[i]
+                }.Schedule(parts[i].Length, jobHandle);
             }
+
+            jobHandle.Complete();
 
             Bounds bounds = new Bounds(root.worldPosition, 3f * objectScale * Vector3.one);
             for (int i = 0; i < matricesBuffers.Length; i++)
@@ -135,6 +158,8 @@ namespace Basics.BuildingAGraph
             for (int i = 0; i < matricesBuffers.Length; i++)
             {
                 matricesBuffers[i].Release();
+                parts[i].Dispose();
+                matrices[i].Dispose();
             }
 
             parts = null;
@@ -162,24 +187,14 @@ namespace Basics.BuildingAGraph
 
 
         /***********************************************************************
-         *              �����ַ������ɵ�ͼ��Ч�ʲ��ߣ���ʱ��ע�͵�
+         *              ?????????????????Ч???????????????
          ***********************************************************************/
 
-        /*
-         * Awake�����ڶ���ʵ��������ã�Start������Update����������֮ǰ���ã�
-         * ��Update����ֻ���ڴ���active״̬�²Żᱻ���ã�����Start��OnEnable����
-         * ֮����á�
-         * 
-         * ���������Instantiate(this)��¡�Լ�������Ƿ���Awake������Ļ�����¡���ɵ�
-         * �����ֻ�ʵ���������ϵ�������Awake����������˲��������������¡��������Ҫ����
-         * Start����ã�����ÿ����¡����ʵ������ֻ���ڵ���Update֮ǰ��¡�Լ�����Update
-         * ÿ֡����һ�Σ�Ҳ����˵ÿ֡��¡��һ���µĶ���
-         */
         //private void Start()
         //{
         //    name = "Fractal_" + depth;
 
-        //    if (depth <= 1) // ���ֵ��СΪ1
+        //    if (depth <= 1) // ??????С?1
         //    {
         //        return;
         //    }
@@ -199,15 +214,15 @@ namespace Basics.BuildingAGraph
 
         //private void Update()
         //{
-        //    transform.Rotate(0f, 22.5f * Time.deltaTime, 0f); // ����������y��ÿ����ת22.5��
+        //    transform.Rotate(0f, 22.5f * Time.deltaTime, 0f); // ??????????y????????22.5??
         //}
 
         /// <summary>
-        /// ���ݵ�ǰ������һ�������壬����������������ڵ�ǰ����ķ����Լ���ת�Ƕ�
+        /// ????????????????????壬????????????????????????????????????
         /// </summary>
-        /// <param name="direction">������ķ���</param>
-        /// <param name="rotation">������ĽǶ�</param>
-        /// <returns>�������ϵ�Fractal���������</returns>
+        /// <param name="direction">??????????</param>
+        /// <param name="rotation">?????????</param>
+        /// <returns>?????????Fractal?????????</returns>
         //private Fractal CreateChild(Vector3 direction, Quaternion rotation)
         //{
         //    Fractal child = Instantiate(this);
