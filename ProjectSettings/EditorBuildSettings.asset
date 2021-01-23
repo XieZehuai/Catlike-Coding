@@ -6,6 +6,6 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/2.2 Basics/Building A Graph/MainScene.unity
-    guid: d5ab7f6f7f10ee34c8b3909a1e3792e1
+    path: Assets/2.4 Object Management/2 Object Variety/ObjectVariety.unity
+    guid: 50d7b7508b48942408f6f91900b90813
   m_configObjects: {}
