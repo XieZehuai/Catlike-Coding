@@ -13,11 +13,14 @@ namespace ObjecManagement.PersistingObjects
 {
     public class DataReader
     {
+        public int Version { get; }
+
         private BinaryReader reader;
 
-        public DataReader(BinaryReader reader)
+        public DataReader(BinaryReader reader, int version)
         {
             this.reader = reader;
+            this.Version = version;
         }
 
         public int ReadInt()
@@ -47,6 +50,17 @@ namespace ObjecManagement.PersistingObjects
             value.y = reader.ReadSingle();
             value.z = reader.ReadSingle();
             value.w = reader.ReadSingle();
+
+            return value;
+        }
+
+        public Color ReadColor()
+        {
+            Color value;
+            value.r = reader.ReadSingle();
+            value.g = reader.ReadSingle();
+            value.b = reader.ReadSingle();
+            value.a = reader.ReadSingle();
 
             return value;
         }

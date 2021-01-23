@@ -22,10 +22,11 @@ namespace ObjecManagement.PersistingObjects
             Debug.Log("´æµµÂ·¾¶ " + savePath);
         }
 
-        public void Save(PersistableObject obj)
+        public void Save(PersistableObject obj, int version)
         {
             using (BinaryWriter writer = new BinaryWriter(File.Open(savePath, FileMode.Create)))
             {
+                writer.Write(-version);
                 obj.Save(new DataWriter(writer));
             }
         }
@@ -34,7 +35,7 @@ namespace ObjecManagement.PersistingObjects
         {
             using (BinaryReader reader = new BinaryReader(File.Open(savePath, FileMode.Open)))
             {
-                obj.Load(new DataReader(reader));
+                obj.Load(new DataReader(reader, -reader.ReadInt32()));
             }
         }
     }

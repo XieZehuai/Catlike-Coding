@@ -44,5 +44,13 @@ namespace ObjecManagement.PersistingObjects
             writer.Write(value.z);
             writer.Write(value.w);
         }
+
+        public void Write(Color value)
+        {
+            writer.Write(value.r);
+            writer.Write(value.g);
+            writer.Write(value.b);
+            writer.Write(value.a);
+        }
     }
 }
