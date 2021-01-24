@@ -5,8 +5,10 @@
  * Description:
  */
 
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Random = UnityEngine.Random;
 using ObjecManagement.ObjectVariety;
 
@@ -20,6 +22,8 @@ namespace ObjecManagement.PersistingObjects
         [SerializeField] private ShapeFactory shapeFactory = default;
         [SerializeField] private PersistentStorage storage = default;
 
+        [SerializeField] private int levelCount = 2;
+
         [Header("¿ì½Ý¼ü")]
         [SerializeField] private KeyCode createKey = KeyCode.C;
         [SerializeField] private KeyCode restartKey = KeyCode.R;
@@ -27,14 +31,32 @@ namespace ObjecManagement.PersistingObjects
         [SerializeField] private KeyCode loadKey = KeyCode.L;
         [SerializeField] private KeyCode destroyKey = KeyCode.X;
 
-        private const int saveVersion = 1; // the version of the save file
+        private const int saveVersion = 2; // the version of the save file
+
         private List<Shape> shapes;
         private float creationProgress;
         private float destructionProgress;
+        private int loadedLevelIndex;
 
-        private void Awake()
+        private void Start()
         {
             shapes = new List<Shape>();
+
+            if (Application.isEditor)
+            {
+                for (int i = 0; i < SceneManager.sceneCount; i++)
+                {
+                    Scene loadedScene = SceneManager.GetSceneAt(i);
+                    if (loadedScene.name.Contains("Level "))
+                    {
+                        SceneManager.SetActiveScene(loadedScene);
+                        loadedLevelIndex = loadedScene.buildIndex;
+                        return;
+                    }
+                }
+            }
+
+            StartCoroutine(LoadLevel(1));
         }
 
         private void Update()
@@ -58,6 +80,18 @@ namespace ObjecManagement.PersistingObjects
             else if (Input.GetKeyDown(destroyKey))
             {
                 DestroyShape();
+            }
+            else
+            {
+                for (int i = 0; i <= levelCount; i++)
+                {
+                    if (Input.GetKeyDown(KeyCode.Alpha0 + i))
+                    {
+                        Restart();
+                        StartCoroutine(LoadLevel(i));
+                        return;
+                    }
+                }
             }
 
             creationProgress += Time.deltaTime * CreationSpeed;
@@ -121,6 +155,7 @@ namespace ObjecManagement.PersistingObjects
         public override void Save(DataWriter writer)
         {
             writer.Write(shapes.Count);
+            writer.Write(loadedLevelIndex);
 
             for (int i = 0; i < shapes.Count; i++)
             {
@@ -142,6 +177,7 @@ namespace ObjecManagement.PersistingObjects
             }
 
             int count = version <= 0 ? -version : reader.ReadInt();
+            StartCoroutine(LoadLevel(version < 2 ? 1 : reader.ReadInt()));
             for (int i = 0; i < count; i++)
             {
                 int shapeId = version > 0 ? reader.ReadInt() : 0;
@@ -150,6 +186,21 @@ namespace ObjecManagement.PersistingObjects
                 shape.Load(reader);
                 shapes.Add(shape);
             }
+        }
+
+        private IEnumerator LoadLevel(int index)
+        {
+            enabled = false;
+            if (loadedLevelIndex > 0)
+            {
+                yield return SceneManager.UnloadSceneAsync(loadedLevelIndex);
+            }
+
+            yield return SceneManager.LoadSceneAsync(index, LoadSceneMode.Additive);
+
+            SceneManager.SetActiveScene(SceneManager.GetSceneByBuildIndex(index));
+            loadedLevelIndex = index;
+            enabled = true;
         }
     }
 }

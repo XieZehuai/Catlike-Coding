@@ -7,6 +7,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace ObjecManagement.ObjectVariety
 {
@@ -18,6 +19,7 @@ namespace ObjecManagement.ObjectVariety
         [SerializeField] private bool recycle = default;
 
         private List<Shape>[] shapePools;
+        private Scene poolScene;
 
         public Shape Get(int shapeId = 0, int materialId = 0)
         {
@@ -43,6 +45,7 @@ namespace ObjecManagement.ObjectVariety
                 {
                     shape = Instantiate(prefabs[shapeId]);
                     shape.ShapeId = shapeId;
+                    SceneManager.MoveGameObjectToScene(shape.gameObject, poolScene);
                 }
             }
             else
@@ -85,6 +88,27 @@ namespace ObjecManagement.ObjectVariety
             {
                 shapePools[i] = new List<Shape>();
             }
+
+            if (Application.isEditor)
+            {
+                poolScene = SceneManager.GetSceneByName(name);
+                if (poolScene.isLoaded)
+                {
+                    GameObject[] rootObjects = poolScene.GetRootGameObjects();
+                    for (int i = 0; i < rootObjects.Length; i++)
+                    {
+                        Shape shape = rootObjects[i].GetComponent<Shape>();
+                        if (!shape.gameObject.activeSelf)
+                        {
+                            shapePools[shape.ShapeId].Add(shape);
+                        }
+                    }
+
+                    return;
+                }
+            }
+
+            poolScene = SceneManager.CreateScene(name);
         }
     }
 }

@@ -6,6 +6,12 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/2.4 Object Management/2 Object Variety/ObjectVariety.unity
+    path: Assets/2.4 Object Management/2 Object Variety/Scenes/ObjectVariety.unity
     guid: 50d7b7508b48942408f6f91900b90813
+  - enabled: 1
+    path: Assets/2.4 Object Management/2 Object Variety/Scenes/Level 1.unity
+    guid: c648f5cbba7cc9e44903664e6ad9c570
+  - enabled: 1
+    path: Assets/2.4 Object Management/2 Object Variety/Scenes/Level 2.unity
+    guid: 4604eb2ba45290549898c6e4a2361649
   m_configObjects: {}
