@@ -28,6 +28,11 @@ namespace Basics.MeasuringPerformance
         private float bestDuration = float.MaxValue;
         private float worstDuration;
 
+        private void Awake() 
+        {
+            DontDestroyOnLoad(gameObject);
+        }
+
         private void Update()
         {
             float frameDuration = Time.unscaledDeltaTime;
