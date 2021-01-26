@@ -19,7 +19,7 @@ namespace Basics.MeasuringPerformance
             MS,
         }
 
-        [SerializeField] TextMeshProUGUI display = default;
+        [SerializeField] private TextMeshProUGUI display = default;
         [SerializeField, Range(0.1f, 2f)] private float sampleDuration = 1f;
         [SerializeField] private DisplayMode displayMode = DisplayMode.FPS;
 
