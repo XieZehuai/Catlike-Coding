@@ -10,63 +10,31 @@ using UnityEngine;
 
 namespace Testing.TypeEventSystem
 {
-    public struct OnUpdate
-    {
-        public string message;
-    }
-
-    public struct OnStart
-    {
-        public int id;
-    }
-
-
     public class NewBehaviourScript : MonoBehaviour
     {
-        [SerializeField] private string message = "Hello World";
-        [SerializeField] private int id = 10086;
+        private void Awake()
+        {
+            print("awake");
+        }
+
+        private void Start()
+        {
+            print("start");
+        }
 
         private void Update()
         {
-            if (Input.GetKeyDown(KeyCode.Q))
-            {
-                TypeEventSystem.Register<OnUpdate>(OnUpdate);
-            }
-
-            if (Input.GetKeyDown(KeyCode.W))
-            {
-                TypeEventSystem.Register<OnStart>(OnStart);
-            }
-
-            if (Input.GetKeyDown(KeyCode.A))
-            {
-                TypeEventSystem.UnRegister<OnUpdate>(OnUpdate);
-            }
-
-            if (Input.GetKeyDown(KeyCode.S))
-            {
-                TypeEventSystem.UnRegister<OnStart>(OnStart);
-            }
-
-            if (Input.GetKeyDown(KeyCode.Z))
-            {
-                TypeEventSystem.Send(new OnUpdate { message = message });
-            }
-
-            if (Input.GetKeyDown(KeyCode.X))
-            {
-                TypeEventSystem.Send(new OnStart { id = id });
-            }
+            print("update");
         }
 
-        private void OnUpdate(OnUpdate context)
+        private void FixedUpdate()
         {
-            Debug.Log("Invoke OnUpdate, message: " + context.message);
+            print("fixed update");
         }
 
-        private void OnStart(OnStart context)
+        private void OnDestroy()
         {
-            Debug.Log("Invoke OnStart, id: " + context.id);
+            print("destroy");
         }
     }
 }

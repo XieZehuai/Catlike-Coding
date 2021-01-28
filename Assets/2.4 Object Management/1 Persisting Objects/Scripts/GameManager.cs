@@ -16,8 +16,12 @@ namespace ObjecManagement.PersistingObjects
 {
     public class GameManager : PersistableObject
     {
+        public static GameManager Instance { get; private set; }
+
         public float CreationSpeed { get; set; }
         public float DestructionSpeed { get; set; }
+
+        public SpawnZone SpawnZoneOfLevel { get; set; }
 
         [SerializeField] private ShapeFactory shapeFactory = default;
         [SerializeField] private PersistentStorage storage = default;
@@ -37,6 +41,11 @@ namespace ObjecManagement.PersistingObjects
         private float creationProgress;
         private float destructionProgress;
         private int loadedLevelIndex;
+
+        private void Awake()
+        {
+            Instance = this;
+        }
 
         private void Start()
         {
@@ -116,7 +125,7 @@ namespace ObjecManagement.PersistingObjects
             Shape shape = shapeFactory.GetRandom();
             Transform t = shape.transform;
 
-            t.localPosition = Random.insideUnitSphere * 5f;
+            t.localPosition = SpawnZoneOfLevel.SpawnPoint;
             t.localRotation = Random.rotation;
             t.localScale = Random.Range(0.1f, 1f) * Vector3.one;
 
