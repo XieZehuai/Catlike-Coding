@@ -19,7 +19,6 @@ namespace ObjecManagement.PersistingObjects
         private void Awake()
         {
             savePath = Path.Combine(Application.persistentDataPath, FILENAME);
-            Debug.Log("´æµµÂ·¾¶ " + savePath);
         }
 
         public void Save(PersistableObject obj, int version)

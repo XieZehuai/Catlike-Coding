@@ -1,0 +1,2 @@
+Cube=ResConfigTest/Cube/Cube
+Sphere=ResConfigTest/Sphere
