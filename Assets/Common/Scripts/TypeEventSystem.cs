@@ -10,7 +10,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Testing.TypeEventSystem
+namespace Common
 {
     public class TypeEventSystem
     {
