@@ -30,6 +30,12 @@ namespace Common
             BuildConfigMap(fileContent);
 		}
 
+        /// <summary>
+        /// 根据传入的资源名称，加载资源（必须是Resources路径下的资源）
+        /// </summary>
+        /// <typeparam name="T">资源的类型</typeparam>
+        /// <param name="prefabName">资源名称</param>
+        /// <returns>加载成功返回资源文件，失败返回null</returns>
         public static T Load<T>(string prefabName) where T : UnityEngine.Object
         {
             if (!configMap.ContainsKey(prefabName))
@@ -87,7 +93,7 @@ namespace Common
 		{
             string path;
 
-#if UNITY_EDITOR
+#if UNITY_EDITOR || UNITY_STANDALONE
             path = "file://" + Application.dataPath + "/StreamingAssets/";
 #elif UNITY_IPHONE
             path = "file://" + Application.dataPath + "/Raw/";
