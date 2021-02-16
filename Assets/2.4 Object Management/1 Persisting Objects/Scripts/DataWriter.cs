@@ -11,8 +11,8 @@ using UnityEngine;
 
 namespace ObjecManagement.PersistingObjects
 {
-	public class DataWriter
-	{
+    public class DataWriter
+    {
         private BinaryWriter writer;
 
         public DataWriter(BinaryWriter writer)
@@ -51,6 +51,11 @@ namespace ObjecManagement.PersistingObjects
             writer.Write(value.g);
             writer.Write(value.b);
             writer.Write(value.a);
+        }
+
+        public void Write(UnityEngine.Random.State value)
+        {
+            writer.Write(JsonUtility.ToJson(value));
         }
     }
 }

@@ -64,5 +64,10 @@ namespace ObjecManagement.PersistingObjects
 
             return value;
         }
+
+        public UnityEngine.Random.State ReadRandomState()
+        {
+            return JsonUtility.FromJson<UnityEngine.Random.State>(reader.ReadString());
+        }
     }
 }

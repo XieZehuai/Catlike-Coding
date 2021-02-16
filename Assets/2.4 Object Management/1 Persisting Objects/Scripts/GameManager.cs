@@ -26,7 +26,8 @@ namespace ObjecManagement.PersistingObjects
         [SerializeField] private ShapeFactory shapeFactory = default;
         [SerializeField] private PersistentStorage storage = default;
 
-        [SerializeField] private int levelCount = 2;
+        [SerializeField] private int levelCount = 3;
+        [SerializeField] private bool reseedOnLoad = default;
 
         [Header("快捷键")]
         [SerializeField] private KeyCode createKey = KeyCode.C;
@@ -35,12 +36,13 @@ namespace ObjecManagement.PersistingObjects
         [SerializeField] private KeyCode loadKey = KeyCode.L;
         [SerializeField] private KeyCode destroyKey = KeyCode.X;
 
-        private const int saveVersion = 2; // the version of the save file
+        private const int saveVersion = 3; // the version of the save file
 
         private List<Shape> shapes;
         private float creationProgress;
         private float destructionProgress;
         private int loadedLevelIndex;
+        private Random.State mainRandomState;
 
         private void Awake()
         {
@@ -49,6 +51,7 @@ namespace ObjecManagement.PersistingObjects
 
         private void Start()
         {
+            mainRandomState = Random.state;
             shapes = new List<Shape>();
 
             if (Application.isEditor)
@@ -65,6 +68,7 @@ namespace ObjecManagement.PersistingObjects
                 }
             }
 
+            Restart();
             StartCoroutine(LoadLevel(1));
         }
 
@@ -153,6 +157,12 @@ namespace ObjecManagement.PersistingObjects
 
         private void Restart()
         {
+            // 每次开始新游戏时重新随机Random状态
+            Random.state = mainRandomState;
+            int seed = Random.Range(0, int.MaxValue) ^ (int)Time.unscaledDeltaTime; // 生成随机种子
+            mainRandomState = Random.state;
+            Random.InitState(seed);
+
             for (int i = 0; i < shapes.Count; i++)
             {
                 shapeFactory.Reclaim(shapes[i]);
@@ -163,9 +173,11 @@ namespace ObjecManagement.PersistingObjects
 
         public override void Save(DataWriter writer)
         {
-            writer.Write(shapes.Count);
-            writer.Write(loadedLevelIndex);
+            writer.Write(shapes.Count); // 保存形状的数量
+            writer.Write(Random.state); // 保存当前Random类的状态
+            writer.Write(loadedLevelIndex); // 保存当前的场景索引
 
+            // 保存所有的形状
             for (int i = 0; i < shapes.Count; i++)
             {
                 writer.Write(shapes[i].ShapeId);
@@ -186,6 +198,16 @@ namespace ObjecManagement.PersistingObjects
             }
 
             int count = version <= 0 ? -version : reader.ReadInt();
+
+            if (version >= 3)
+            {
+                Random.State state = reader.ReadRandomState();
+                if (reseedOnLoad)
+                {
+                    Random.state = state;
+                }
+            }
+
             StartCoroutine(LoadLevel(version < 2 ? 1 : reader.ReadInt()));
             for (int i = 0; i < count; i++)
             {

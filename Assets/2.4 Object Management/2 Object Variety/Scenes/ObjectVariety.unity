@@ -1336,6 +1336,7 @@ MonoBehaviour:
   shapeFactory: {fileID: 11400000, guid: 6051bc91c571768438689577a506f5f4, type: 2}
   storage: {fileID: 2008701419}
   levelCount: 3
+  reseedOnLoad: 1
   createKey: 99
   restartKey: 114
   saveKey: 115
