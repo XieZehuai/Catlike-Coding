@@ -15,10 +15,5 @@ namespace Testing
 {
     public class Test : MonoBehaviour
     {
-        private void Start()
-        {
-            GameObject obj = ResourceManager.Load<GameObject>("Cube");
-            Instantiate(obj);
-        }
     }
 }
